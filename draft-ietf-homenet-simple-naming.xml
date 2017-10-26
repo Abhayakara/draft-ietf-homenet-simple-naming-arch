@@ -63,15 +63,15 @@
 
       <t>
 	This simple architecture is intended to serve as a foundational architecture for naming on home networks. It is expected
-	that all homenet routers will implement this architecture. It satisfies a subset of the requirements listed in IPv6 Home
+	that all Homenet routers will implement this architecture. It satisfies a subset of the requirements listed in IPv6 Home
 	Networking Architecture Principles <xref target="RFC7368"/>, and provides a foundation for completely addressing those
 	requirements.
       </t>
 
       <t>
-	This simple architecture leaves the following requirements from RFC7368 Secton 3.7 unaddressed:
+	This simple architecture leaves the following requirements from RFC7368 Section 3.7 unaddressed:
 	<list style="symbols">
-	  <t>Acquisition and configuration of a global name for the homenet, to be used in place of 'home.arpa.'</t>
+	  <t>Acquisition of a global name for the homenet, to be used in place of 'home.arpa.'</t>
 	  <t>Delegation of public reverse trees for prefixes delegated to the homenet: subdomains of 'ip6.arpa' and 'in-addr.arpa'.</t>
 	  <t>Publication of names on the homenet for general public use on the internet.</t>
 	  <t>Publication of names on the homenet for use by authorized users of the homenet when connected to other networks.</t>
@@ -84,18 +84,18 @@
       </t>
 
       <t>
-	In order to provide name service on a local network, several provisioning mechanisms must be available:
+	In general, the set of capabilities required to discover services on any network are:
 	
 	<list style="symbols">
-	  <t>Provisioning of a domain name under which names can be published and services advertised</t>
+	  <t>A domain name that represents the network, under which names can be published and services advertised</t>
 
-	  <t>Publishing subdomains of that name that identify hosts.</t>
+	  <t>The ability to publish names that identify hosts and services.</t>
 
-	  <t>Advertising services available on the local network by publishing resource records on those names.</t>
+	  <t>Advertising locally available services by publishing resource records.</t>
 
-	  <t>Distribution of names published in that namespace to servers that can be queried in order to resolve names</t>
+	  <t>A service that can be queried for names and resources records in order to discover and use services.</t>
 
-	  <t>Correct advertisement of name servers that can be queried in order to resolve names</t>
+	  <t>Advertisement of that service so that hosts can send queries to it.</t>
 
 	  <t>Timely removal of published names and resource records when they are no longer in use</t>
 	</list>
@@ -110,8 +110,8 @@
 	<t>Because user intervention cannot be required, naming conflicts must be resolved automatically, and, to the extent
 	  possible, transparently.</t>
 
-	<t>Hosts that do not implement any homenet-specific capabilities must still be able to discover and access services on the
-	  homenet, to the extent possible.</t>
+	<t>Hosts are not required to implement any homenet-specific capabilities in order to discover and access services on the
+	  homenet.</t>
 	
 	<t>Devices that provide services must be able to publish those services on the homenet, and those services must be
 	  available from any part of the homenet, not just the link to which the device is attached.</t>
@@ -146,13 +146,14 @@
 	  attacker on the network to steal a registered name.
 	</t>
 	<t>Hybrid Multicast DNS <xref target="I-D.ietf-dnssd-hybrid"/> proposes a mechanism for extending multicast DNS beyond a
-	  single multicast domain.  However, in order to use this as a solution, some shortcomings need to be addressed.  Most
+	  single multicast domain.  However, in order to use this as a solution, some shortcomings need to be considered.  Most
 	  obviously, it requires that every multicast domain have a separate name.  This then requires that the homenet generate
 	  names for every multicast domain.  These names would then be revealed to the end user.  But since they would be generated
 	  automatically and arbitrarily, they would likely cause confusion rather than clarity, and in degenerate cases requires
 	  that the end user have a mental model of the topology of the network in order to guess on which link a given service may
 	  appear.</t>
-	<t>Note: We've actually worked a bit on this, and maybe this bullet item should go away or be revised.</t>
+	<t>At present, the approach we intend to take with respect to disambiguation is that this will not be solved at a protocol
+	  level for devices that do not implement the registration protocol.</t>
       </section>
     </section>
 
@@ -166,9 +167,10 @@
 
     <section title="Name Resolution">
       <section title="Configuring Resolvers">
+<!-- update this to describe how the relay proxy is used for on-link relay -->
 	<t>Hosts on the homenet receive a set of resolver IP addresses using either DHCP or RA.  IPv4-only hosts will receive IPv4
 	  addresses of resolvers, if available, over DHCP.  IPv6-only hosts will receive resolver IPv6 addresses using either
-	  stateful (if available) or stateless DHCPv6, or through the domain name option in router advertisements.  All homenet
+	  stateful (if available) or stateless DHCPv6, or through the domain name option in router advertisements.  All Homenet
 	  routers provide resolver information using both stateless DHCPv6 and RA; support for stateful DHCPv6 and DHCPv4 is
 	  optional, however if either service is offered, resolver addresses will be provided using that mechanism as well.
 	  Resolver IP addresses will always be IP addresses on the local link: every HNR is required to provide name resolution
@@ -179,6 +181,9 @@
 
       <section title="Configuring Service Discovery">
 	<!-- XXX we could do queries for lb._dnssd._udp.local using mDNS, but we prefer unicast because it's less of a resource hog -->
+	<!-- This is muddling service discovery bootstrap and service discovery of services.  Update this to talk about how service
+	     discovery service is discovered, as opposed to how it is done once bootstrap has completed. -->
+	<!-- note: service discovery bootstrap using '.local' would work, but requires multicast, which we would like to avoid. -->
 	
 	<t>DNS-SD uses several default domains for advertising local zones that are available for service discovery.  These include
 	  the '.local' domain, which is searched using mDNS, and also the IPv4 and IPv6 reverse zone corresponding to the prefixes
@@ -197,13 +202,15 @@
 	  under "db._dns_sd.&lt;domain&gt;", "r._dns_sd.&lt;domain&gt;", "dr._dns_sd.&lt;domain&gt;" and
 	  "lb._dns_sd.&lt;domain&gt;".</t>
 
+	<!-- homenet just needs to answer queries on lb._dns_sd.<domain>, and in order for that to work, there has to be an
+	     authoritative server. -->
 	<t>In order for this discovery process to work, the homenet must provide authoritative name service for the 'ip6.arpa' and
 	  'in-addr.arpa' subdomains corresponding to each of the prefixes advertised on the homenet.   For example, consider a homenet
 	  with the 192.168.1.0/24, 2001:db8:1234:5600::/56 and fc01:2345:6789:1000::/56 prefixes.   This homenet will have to provide
 	  a name server that claims to be authoritative for 1.168.192.in-addr.arpa, 6.5.4.3.2.1.8.b.d.0.1.0.0.2.ip6.arpa and
 	  0.0.9.8.7.6.5.4.3.2.1.0.c.f.ip6.arpa.
 	</t>
-	<t>An IPv6-only homenet would not have a server for a subdomain of in-addr.arpa.  These public authoritative zones are
+	<t>An IPv6-only homenet would not have an authoritative server for a subdomain of in-addr.arpa.  These public authoritative zones are
 	  required for the public prefixes even if the prefixes are not delegated.  However, they need not be accessible outside of
 	  the homenet.</t>
 	<t>It is out of the scope of this document to specify ISP behavior, but we note that ISPs have the option of securely
@@ -228,9 +235,10 @@
 	  mappings for global IP addresses.  This should not cause operational problems, since connections between devices on the
 	  homenet can be expected to use addresses in the homenet's ULA prefix.</t>
 
-	<t>IP addresses and names advertised locally MUST use addresses in the homenet's ULA prefix and/or RFC1918 prefix.  The
-	  reason for this is that the homenet ULA can be assumed to be stable, but prefixes assigned by ISPs cannot.  The stability
-	  of ISP-provided addresses is a matter of ISP policy, and can't be controlled by the homenet.</t>
+	<t>ISP-provided addresses cannot be assumed to be stable.  Not only is it possible that the ISP policy is to change
+	addresses over time, but the connection to the ISP may not always be available.  The homenet's ULA prefix and RFC1918
+	prefix, however, can be assumed to be stable.  Therefore, IP addresses and names advertised locally MUST use addresses in
+	the homenet's ULA prefix and/or RFC1918 prefix.</t>
 
 	<t>It is possible that local services may offer services available on IP addresses in public as well as ULA prefixes.
 	  Homenet hybrid proxies MUST filter out global IP addresses, providing only ULA addresses, similar to the process described
@@ -250,12 +258,12 @@
 	  in the event that the same name is claimed by a service on two links.   Services that are expected to be accessed by users
 	  who type in names should use <xref target="I-D.sctl-service-registration"/> if it is available.</t>
 
-	<t>Homenets are not required to support Service Registration.   Service registration requires a stateful DNS server; this
-	  may be beyond the capability of the minimal homenet router.   However, more capable homenet routers should provide this
-	  capability.   In order to make this work, minimal homenet routers MUST implement the split hybrid proxy described in
-	  <xref target="I-D.sctl-mdns-relay"/>.   This enables a homenet with one or more homenet routers that provide a stateful
+	<t>Homenets are not required to support Service Registration.   Service registration requires a stateful authoritative DNS server; this
+	  may be beyond the capability of the minimal Homenet router.   However, more capable Homenet routers should provide this
+	  capability.   In order to make this work, minimal Homenet routers MUST implement the split hybrid proxy
+	  <xref target="I-D.sctl-mdns-relay"/>.   This enables a Homenet with one or more Homenet routers that provide a stateful
 	  registration cache to allow those routers to take over service, using Discovery Relays to service links that are
-	  connected using homenet routers with more limited functionality.
+	  connected using Homenet routers with more limited functionality.
 	</t>
       </section>
 
@@ -320,9 +328,10 @@
     </section>
 
     <section title="IANA considerations" anchor="IANA">
-      <t>This document is relying on the allocation of 'home.arpa' described in Special Use Top Level Domain
-	'.home.arpa' <xref target="I-D.ietf-homenet-dot"/>.   As such, no new actions are required by IANA, but this document
-	can't proceed until that allocation is done.</t>
+      <t>No new actions are required by IANA for this document.</t>
+      <t>Note however that this document is relying on the allocation of 'home.arpa' described in Special Use Top Level Domain
+	'.home.arpa' <xref target="I-D.ietf-homenet-dot"/>.  This document therefore can't proceed until that allocation is
+	done. [RFC EDITOR PLEASE REMOVE THIS PARAGRAPH PRIOR TO PUBLICATION].</t>
     </section>
   </middle>
   
