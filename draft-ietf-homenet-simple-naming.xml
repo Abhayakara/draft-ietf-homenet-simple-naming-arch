@@ -185,24 +185,61 @@
 	     discovery service is discovered, as opposed to how it is done once bootstrap has completed. -->
 	<!-- note: service discovery bootstrap using '.local' would work, but requires multicast, which we would like to avoid. -->
 	
-	<t>DNS-SD uses several default domains for advertising local zones that are available for service discovery.  These include
-	  the '.local' domain, which is searched using mDNS, and also the IPv4 and IPv6 reverse zone corresponding to the prefixes
-	  in use on the local network.  For the homenet, no support for queries against the ".local" zone is provided by HNRs: a
-	  ".local" query will be satisfied or not by services present on the local link.  This should not be an issue: all known
-	  implementations of DNSSD will do unicast queries using the DNS protocol.</t>
+	<t>Clients discovering services using <xref target="RFC6763">DNS-SD</xref> follow a two-step process.
+	  The first step is for the client device to determine in which domain(s) to attempt to discover services.
+	  The second step is for the client device to then seek desired service(s) in those domain(s).
+	  For an example of the second step,
+	  given the desired service type "IPP Printing", and the domains "local" and "meeting.ietf.org",
+	  the client device forms the queries "_ipp._tcp.local. PTR ?" (resolved using Multicast DNS)
+	  and "_ipp._tcp.meeting.ietf.org PTR. ?" (resolved using Unicast DNS)
+	  and then presents the combined list of results to the user.</t>
 
-	<t>Service discovery is configured using the technique described in Section 11 of DNS-Based Service Discovery
-	  <xref target="RFC6763"/>.  HNRs will answer domain enumeration queries against every IPv4 address prefix advertised on a
+	<t>The first step, determining in which domain(s) to attempt to discover services, is performed in a variety of ways,
+	  as described in Section 11 of the <xref target="RFC6763">DNS-Based Service Discovery specification</xref>.</t>
+
+	<t>The domain "local" is generally always in the set of domains in which
+	  the client devices attempt to discover services, and other domains for
+	  service discovery may be configured manually by the user.</t>
+
+	<t>The device also learns additional domains automatically from its network environment.
+	  For this automatic configuration discovery, special DNS queries are formulated.
+	  To learn additional domain(s) in which to attempt to discover services, the query string
+	  "lb._dns_sd._udp" is prepended onto three different kinds of "bootstrap domain" to form
+	  DNS queries that allow the device to learn the configuration information.</t>
+
+	<t>One of these bootstrap domains is "local".
+	  The device issues the query "lb._dns_sd._udp.local. PTR ?" (resolved using Multicast DNS),
+	  and if any answers are received, then they are added to the set of domains in which the
+	  client devices attempt to discover services.</t>
+
+	<t>Another of these bootstrap domains is derived from DHCP.
+	  If the domain given in the "domain" parameter of a DHCP address allocation message is "example.com", then
+	  the device issues the query "lb._dns_sd._udp.example.com. PTR ?" (resolved using Unicast DNS),
+	  and if any answers are received, then they are likewise added to the set of domains in which the
+	  client devices attempt to discover services.</t>
+
+	<t>Finally, bootstrap domains are derived from the devices IP addresses themselves.
+	  If the device has IP address 192.168.1.100/24, then
+	  the device issues the query "lb._dns_sd._udp.0.1.168.192.in-addr.arpa. PTR ?" (resolved using Unicast DNS),
+	  and if any answers are received, then they are also added to the set of domains in which the
+	  client devices attempt to discover services.</t>
+
+	<t>Since there is an HNR on every link of a homenet, automatic configuration could be performed
+	  by having HNRs answer the "lb._dns_sd._udp.local. PTR ?" (Multicast DNS) queries.
+	  However, multicast is slow and unreliable on many modern network technologies like Wi-Fi,
+	  so we prefer to avoid using it. Instead we require that a homenet answer the address-based queries.</t>
+
+	<t>HNRs will answer domain enumeration queries against every IPv4 address prefix advertised on a
 	  homenet link, and every IPv6 address prefix advertised on a homenet link, including prefixes derived from the homenet's
 	  ULA(s).  Whenever the "&lt;domain&gt;" sequence appears in this section, it references each of the domains mentioned in
 	  this paragraph.</t>
 
-	<t>Homenets advertise the availability of several browsing zones in the "b._dns_sd.&lt;domain&gt;" subdomain.  By default,
+	<t>Homenets advertise the availability of several browsing zones in the "b._dns_sd._udp.&lt;domain&gt;" subdomain.  By default,
 	  the 'home.arpa' domain is advertised.  Similarly, 'home.arpa' is advertised as the default browsing and service registration domain
-	  under "db._dns_sd.&lt;domain&gt;", "r._dns_sd.&lt;domain&gt;", "dr._dns_sd.&lt;domain&gt;" and
-	  "lb._dns_sd.&lt;domain&gt;".</t>
+	  under "db._dns_sd._udp.&lt;domain&gt;", "r._dns_sd._udp.&lt;domain&gt;", "dr._dns_sd._udp.&lt;domain&gt;" and
+	  "lb._dns_sd._udp.&lt;domain&gt;".</t>
 
-	<!-- homenet just needs to answer queries on lb._dns_sd.<domain>, and in order for that to work, there has to be an
+	<!-- homenet just needs to answer queries on lb._dns_sd._udp.<domain>, and in order for that to work, there has to be an
 	     authoritative server. -->
 	<t>In order for this discovery process to work, the homenet must provide authoritative name service for the 'ip6.arpa' and
 	  'in-addr.arpa' subdomains corresponding to each of the prefixes advertised on the homenet.   For example, consider a homenet
