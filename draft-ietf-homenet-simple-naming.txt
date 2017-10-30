@@ -3,10 +3,12 @@
 
 
 Network Working Group                                           T. Lemon
-Internet-Draft                                             Nominum, Inc.
+Internet-Draft                                       Barefoot Consulting
 Intended status: Informational                                D. Migault
-Expires: May 2, 2018                                            Ericsson
-                                                        October 29, 2017
+Expires: May 3, 2018                                            Ericsson
+                                                             S. Cheshire
+                                                              Apple Inc.
+                                                        October 30, 2017
 
 
         Simple Homenet Naming and Service Discovery Architecture
@@ -33,31 +35,32 @@ Status of This Memo
    Internet-Drafts are working documents of the Internet Engineering
    Task Force (IETF).  Note that other groups may also distribute
    working documents as Internet-Drafts.  The list of current Internet-
-   Drafts is at http://datatracker.ietf.org/drafts/current/.
+   Drafts is at https://datatracker.ietf.org/drafts/current/.
 
    Internet-Drafts are draft documents valid for a maximum of six months
    and may be updated, replaced, or obsoleted by other documents at any
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on May 2, 2018.
+   This Internet-Draft will expire on May 3, 2018.
 
 Copyright Notice
 
    Copyright (c) 2017 IETF Trust and the persons identified as the
    document authors.  All rights reserved.
 
-   This document is subject to BCP 78 and the IETF Trust's Legal
-   Provisions Relating to IETF Documents
-   (http://trustee.ietf.org/license-info) in effect on the date of
 
 
 
-Lemon & Migault            Expires May 2, 2018                  [Page 1]
+
+Lemon, et al.              Expires May 3, 2018                  [Page 1]
 
 Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
 
 
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents
+   (https://trustee.ietf.org/license-info) in effect on the date of
    publication of this document.  Please review these documents
    carefully, as they describe your rights and restrictions with respect
    to this document.  Code Components extracted from this document must
@@ -72,17 +75,19 @@ Table of Contents
    2.  Terminology . . . . . . . . . . . . . . . . . . . . . . . . .   5
    3.  Name Resolution . . . . . . . . . . . . . . . . . . . . . . .   5
      3.1.  Configuring Resolvers . . . . . . . . . . . . . . . . . .   5
-     3.2.  Configuring Service Discovery . . . . . . . . . . . . . .   6
-     3.3.  Resolution of local names . . . . . . . . . . . . . . . .   8
-     3.4.  DNSSEC Validation . . . . . . . . . . . . . . . . . . . .   9
-     3.5.  Support for Multiple Provisioning Domains . . . . . . . .   9
-     3.6.  Using the Local Namespace While Away From Home  . . . . .  10
-   4.  Management Considerations . . . . . . . . . . . . . . . . . .  10
-   5.  Privacy Considerations  . . . . . . . . . . . . . . . . . . .  10
+     3.2.  DNS Service Discovery Registration Protocol . . . . . . .   6
+     3.3.  Configuring Service Discovery . . . . . . . . . . . . . .   6
+     3.4.  Resolution of local names . . . . . . . . . . . . . . . .   8
+     3.5.  Globally Unique Name  . . . . . . . . . . . . . . . . . .  10
+     3.6.  DNSSEC Validation . . . . . . . . . . . . . . . . . . . .  10
+     3.7.  Support for Multiple Provisioning Domains . . . . . . . .  10
+     3.8.  Using the Local Namespace While Away From Home  . . . . .  11
+   4.  Management Considerations . . . . . . . . . . . . . . . . . .  11
+   5.  Privacy Considerations  . . . . . . . . . . . . . . . . . . .  11
    6.  Security Considerations . . . . . . . . . . . . . . . . . . .  11
    7.  IANA considerations . . . . . . . . . . . . . . . . . . . . .  11
-   8.  Normative References  . . . . . . . . . . . . . . . . . . . .  11
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  12
+   8.  Normative References  . . . . . . . . . . . . . . . . . . . .  12
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  13
 
 1.  Introduction
 
@@ -102,17 +107,15 @@ Table of Contents
    Architecture Principles [7], and provides a foundation for completely
    addressing those requirements.
 
-   This simple architecture leaves the following requirements from
-   RFC7368 Section 3.7 unaddressed:
 
 
-
-
-
-Lemon & Migault            Expires May 2, 2018                  [Page 2]
+Lemon, et al.              Expires May 3, 2018                  [Page 2]
 
 Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
 
+
+   This simple architecture leaves the following requirements from
+   RFC7368 Section 3.7 unaddressed:
 
    o  Acquisition of a global name for the homenet, to be used in place
       of 'home.arpa.'
@@ -158,18 +161,18 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
    A simple homenet naming architecture adds the following
    considerations:
 
-   1.  Users cannot be assumed to be skilled or knowledgeable in name
-       service operation, or even to have any sort of mental model of
-       how these functions work.  All of the operations mentioned here
 
 
 
 
-Lemon & Migault            Expires May 2, 2018                  [Page 3]
+Lemon, et al.              Expires May 3, 2018                  [Page 3]
 
 Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
 
 
+   1.  Users cannot be assumed to be skilled or knowledgeable in name
+       service operation, or even to have any sort of mental model of
+       how these functions work.  All of the operations mentioned here
        must reliably function automatically, without any user
        intervention or debugging.
 
@@ -215,16 +218,16 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
 
    Some managed networks get around this problem by having the DHCP
    server do DNS updates.  However, this doesn't really work, because
-   DHCP doesn't provide a mechanism for updating service discovery
-   records: it only supports publishing A and AAAA records.
 
 
 
-
-Lemon & Migault            Expires May 2, 2018                  [Page 4]
+Lemon, et al.              Expires May 3, 2018                  [Page 4]
 
 Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
 
+
+   DHCP doesn't provide a mechanism for updating service discovery
+   records: it only supports publishing A and AAAA records.
 
    This partially solves the trust problem: DHCP can validate that a
    device is at least connected to a network link that is actually part
@@ -265,24 +268,39 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
    either DHCP or RA.  IPv4-only hosts will receive IPv4 addresses of
    resolvers, if available, over DHCP.  IPv6-only hosts will receive
    resolver IPv6 addresses using either stateful (if available) or
-   stateless DHCPv6, or through the domain name option in router
-   advertisements.  All Homenet routers provide resolver information
-   using both stateless DHCPv6 and RA; support for stateful DHCPv6 and
-   DHCPv4 is optional, however if either service is offered, resolver
-   addresses will be provided using that mechanism as well.  Resolver IP
-   addresses will always be IP addresses on the local link: every HNR is
-   required to provide name resolution service.  This is necessary to
-   allow DNS update using presence on-link as a mechanism for rejecting
-   off-network attacks.
+   stateless DHCPv6, or through the Recursive DNS Server Option ([9],
+   Section 5.1) in router advertisements.
+
+   All Homenet routers provide resolver information using both stateless
+   DHCPv6 and RA; support for stateful DHCPv6 and DHCPv4 is optional,
 
 
 
-Lemon & Migault            Expires May 2, 2018                  [Page 5]
+
+Lemon, et al.              Expires May 3, 2018                  [Page 5]
 
 Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
 
 
-3.2.  Configuring Service Discovery
+   however if either service is offered, resolver addresses will be
+   provided using that mechanism as well.
+
+3.2.  DNS Service Discovery Registration Protocol
+
+   The DNSSD Service Registration protocol [12] requires that DNS
+   updates be validated on the basis that they are received on the local
+   link.  To ensure that such registrations are actually received on
+   local links in the homenet, updates are sent to the local relay proxy
+   ([11]) (XXX how?).
+
+   The relay proxy encapsulates the update and sends it to whatever
+   Discovery Proxy is listening on the link; the Discovery proxy then
+   either consumes the update directly, or forwards it to the
+   authoritative resolver for the local service discovery zone.  If the
+   registration protocol is not supported on the homenet, the Discovery
+   Proxy rejects the update with a ??? RCODE.
+
+3.3.  Configuring Service Discovery
 
    Clients discovering services using DNS-SD [6] follow a two-step
    process.  The first step is for the client device to determine in
@@ -311,6 +329,15 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
    "bootstrap domain" to form DNS queries that allow the device to learn
    the configuration information.
 
+
+
+
+
+Lemon, et al.              Expires May 3, 2018                  [Page 6]
+
+Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
+
+
    One of these bootstrap domains is the fixed string "local".  The
    device issues the query "lb._dns_sd._udp.local.  PTR ?" (resolved
    using Multicast DNS), and if any answers are received, then they are
@@ -330,14 +357,6 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
    from the device's IP address(es) themselves.  If the device has IP
    address 192.168.1.100/24, then the device issues the query
    "lb._dns_sd._udp.0.1.168.192.in-addr.arpa.  PTR ?" (resolved using
-
-
-
-Lemon & Migault            Expires May 2, 2018                  [Page 6]
-
-Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
-
-
    Unicast DNS), and if any answers are received, then they are also
    added to the set of domains in which the client devices attempt to
    discover services.
@@ -367,17 +386,26 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
    Homenets advertise the availability of several browsing zones in the
    "b._dns_sd._udp.<domain>" subdomain.  By default, the 'home.arpa'
    domain is advertised.  Similarly, 'home.arpa' is advertised as the
+
+
+
+Lemon, et al.              Expires May 3, 2018                  [Page 7]
+
+Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
+
+
    default browsing and service registration domain under
    "db._dns_sd._udp.<domain>", "r._dns_sd._udp.<domain>",
    "dr._dns_sd._udp.<domain>" and "lb._dns_sd._udp.<domain>".
 
    In order for this discovery process to work, the homenet must provide
-   authoritative name service for the 'ip6.arpa' and 'in-addr.arpa'
-   subdomains corresponding to each of the prefixes advertised on the
-   homenet.  For example, consider a homenet with the 192.168.1.0/24,
-   2001:db8:1234:5600::/56 and fc01:2345:6789:1000::/56 prefixes.  This
-   homenet will have to provide a name server that claims to be
-   authoritative for 1.168.192.in-addr.arpa,
+   authoritative answers for each of the domains that might be queried.
+   To do this, it provides authoritative name service for the 'ip6.arpa'
+   and 'in-addr.arpa' subdomains corresponding to each of the prefixes
+   advertised on the homenet.  For example, consider a homenet with the
+   192.168.1.0/24, 2001:db8:1234:5600::/56 and fc01:2345:6789:1000::/56
+   prefixes.  This homenet will have to provide a name server that
+   claims to be authoritative for 1.168.192.in-addr.arpa,
    6.5.4.3.2.1.8.b.d.0.1.0.0.2.ip6.arpa and
    0.0.9.8.7.6.5.4.3.2.1.0.c.f.ip6.arpa.
 
@@ -386,13 +414,6 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
    required for the public prefixes even if the prefixes are not
    delegated.  However, they need not be accessible outside of the
    homenet.
-
-
-
-Lemon & Migault            Expires May 2, 2018                  [Page 7]
-
-Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
-
 
    It is out of the scope of this document to specify ISP behavior, but
    we note that ISPs have the option of securely delegating the zone, or
@@ -408,19 +429,27 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
    an unsigned delegation.  We do not wish, however, to discourage
    provisioning of signed delegations when that is possible.
 
-3.3.  Resolution of local names
+3.4.  Resolution of local names
 
-   Local names appear as subdomains of 'home.arpa'.  These names can
-   only be resolved within the homenet; not only is 'home.arpa' not a
-   globally unique name, but queries from outside of the homenet for any
-   name, on or off the homenet, must be rejected with a REFUSED
-   response.  The intended use case for local names is that hosts will
-   attempt to discover or contact other hosts on the homenet that are
-   offering services.
+   By default, Local names appear as subdomains of 'home.arpa'.  These
+   names can only be resolved within the homenet; not only is
+   'home.arpa' not a globally unique name, but queries from outside of
+   the homenet for any name, on or off the homenet, must be rejected
+   with a REFUSED response.  The intended use case for local names is
+   that hosts will attempt to discover or contact other hosts on the
+   homenet that are offering services.
 
    In addition, names of devices on the homenet can appear in the
    resource records of names that are subdomains of the locally-served
    'in-addr.arpa' or 'ip6.arpa zone that corresponding to the RFC1918
+
+
+
+Lemon, et al.              Expires May 3, 2018                  [Page 8]
+
+Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
+
+
    IPv4 prefix and the IPv6 ULA that is in use on the homenet.  Names
    ending in 'home.arpa' should never appear in RRDATA for names that
    are subdomains of reverse mappings for global IP addresses.  This
@@ -442,14 +471,6 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
 
    This filtering applies to queries within the homenet; it is
    appropriate for non-ULA addresses to be used for offering services,
-
-
-
-Lemon & Migault            Expires May 2, 2018                  [Page 8]
-
-Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
-
-
    because in some cases end users may want such services to be
    reachable outside of the homenet.  Configuring this is however out of
    scope for this document.
@@ -458,7 +479,7 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
    However, homenets do not actually have a way to name local links that
    will make any sense to the end user.  Consequently, this mechanism
    will not work without some tweaks.  In order to address this,
-   homenets will use Discovery Brokers [14].  The discovery broker will
+   homenets will use Discovery Brokers [16].  The discovery broker will
    be configured so that a single query for a particular service will be
    successful in providing the information required to access that
    service, regardless of the link it is on.
@@ -467,27 +488,49 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
    only be visible to the user in graphical user interfaces in the event
    that the same name is claimed by a service on two links.  Services
    that are expected to be accessed by users who type in names should
-   use [15] if it is available.
+   use [12] if it is available.
 
    Homenets are not required to support Service Registration.  Service
    registration requires a stateful authoritative DNS server; this may
    be beyond the capability of the minimal Homenet router.  However,
    more capable Homenet routers should provide this capability.  In
    order to make this work, minimal Homenet routers MUST implement the
-   split hybrid proxy [16].  This enables a Homenet with one or more
+   split hybrid proxy [11].  This enables a Homenet with one or more
    Homenet routers that provide a stateful registration cache to allow
    those routers to take over service, using Discovery Relays to service
+
+
+
+Lemon, et al.              Expires May 3, 2018                  [Page 9]
+
+Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
+
+
    links that are connected using Homenet routers with more limited
    functionality.
 
-3.4.  DNSSEC Validation
+3.5.  Globally Unique Name
+
+   Automatic configuration of a globally unique name for the homenet is
+   out of scope for this document.  However, homenet servers MUST allow
+   the user to configure a globally unique name in place of the default
+   name, 'home.arpa.'  By default, even if configured with a global
+   name, homenet routers MUST NOT answer queries from outside of the
+   homenet for subdomains of that name.
+
+3.6.  DNSSEC Validation
 
    DNSSEC Validation for the 'home.arpa' zone and for the locally-served
    'ip6.arpa and 'in-adr.arpa' domains is not possible without a trust
    anchor.  Establishment of a trust anchor for such validation is out
    of scope for this document.
 
-3.5.  Support for Multiple Provisioning Domains
+   Homenets that have been configured with a globally unique domain MUST
+   support DNSSEC signing of local names, and must provide a way to
+   generate a KSK that can be used in the secure delegation of the
+   globally unique domain assigned to the homenet.
+
+3.7.  Support for Multiple Provisioning Domains
 
    Homenets must support the Multiple Provisioning Domain Architecture
    [8].  Hosts connected to the homenet may or may not support multiple
@@ -498,14 +541,6 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
    host chooses a source address from a different provisioning domain,
    or does not work at all.  However, the default source address
    selection policy, longest-match [CITE], will result in the correct
-
-
-
-Lemon & Migault            Expires May 2, 2018                  [Page 9]
-
-Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
-
-
    source address being chosen as long as the destination address has a
    close match to the prefix assigned by the ISP.
 
@@ -518,6 +553,15 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
    cannot be assumed to be persistent, the homenet has its own separate
    provisioning domain.
 
+
+
+
+
+Lemon, et al.              Expires May 3, 2018                 [Page 10]
+
+Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
+
+
    Configuration from the IPv4 DHCP server are treated as being part of
    the homenet provisioning domain.  The case where a homenet advertises
    IPv4 addresses from one or more public prefixes is out of scope for
@@ -526,7 +570,7 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
    Configuration for IPv6 provisioning domains is done using the
    Multiple Provisioning Domain RA option [CITE].
 
-3.6.  Using the Local Namespace While Away From Home
+3.8.  Using the Local Namespace While Away From Home
 
    This architecture does not provide a way for service discovery to be
    performed on the homenet by devices that are not directly connected
@@ -536,7 +580,7 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
 
    This architecture is intended to be self-healing, and should not
    require management.  That said, a great deal of debugging and
-   management can be done simply using the DNS service discovery
+   management can be done simply using the DNS Service Discovery
    protocol.
 
 5.  Privacy Considerations
@@ -550,17 +594,7 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
    does not occur if it is not desired.  However, devices that need to
    have special permission to manage the homenet will inevitably reveal
    something about themselves when doing so.  It may be possible to use
-   something like HTTP token binding [12] to mitigate this risk.
-
-
-
-
-
-
-Lemon & Migault            Expires May 2, 2018                 [Page 10]
-
-Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
-
+   something like HTTP token binding [14] to mitigate this risk.
 
 6.  Security Considerations
 
@@ -576,7 +610,15 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
 
    Note however that this document is relying on the allocation of
    'home.arpa' described in Special Use Top Level Domain '.home.arpa'
-   [13].  This document therefore can't proceed until that allocation is
+
+
+
+Lemon, et al.              Expires May 3, 2018                 [Page 11]
+
+Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
+
+
+   [15].  This document therefore can't proceed until that allocation is
    done.  [RFC EDITOR PLEASE REMOVE THIS PARAGRAPH PRIOR TO
    PUBLICATION].
 
@@ -600,23 +642,12 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
               <https://www.rfc-editor.org/info/rfc2136>.
 
    [5]        Cheshire, S. and M. Krochmal, "Multicast DNS", RFC 6762,
-              DOI 10.17487/RFC6762, February 2013, <https://www.rfc-
-              editor.org/info/rfc6762>.
+              DOI 10.17487/RFC6762, February 2013,
+              <https://www.rfc-editor.org/info/rfc6762>.
 
    [6]        Cheshire, S. and M. Krochmal, "DNS-Based Service
               Discovery", RFC 6763, DOI 10.17487/RFC6763, February 2013,
               <https://www.rfc-editor.org/info/rfc6763>.
-
-
-
-
-
-
-
-Lemon & Migault            Expires May 2, 2018                 [Page 11]
-
-Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
-
 
    [7]        Chown, T., Ed., Arkko, J., Brandt, A., Troan, O., and J.
               Weil, "IPv6 Home Networking Architecture Principles",
@@ -636,52 +667,46 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
               Service Discovery", draft-ietf-dnssd-hybrid-07 (work in
               progress), September 2017.
 
-   [11]       Korhonen, J., Krishnan, S., and S. Gundavelli, "Support
-              for multiple provisioning domains in IPv6 Neighbor
-              Discovery Protocol", draft-ietf-mif-mpvd-ndp-support-03
-              (work in progress), February 2016.
-
-   [12]       Popov, A., Nystrom, M., Balfanz, D., Langley, A., Harper,
-              N., and J. Hodges, "Token Binding over HTTP", draft-ietf-
-              tokbind-https-10 (work in progress), July 2017.
-
-   [13]       Pfister, P. and T. Lemon, "Special Use Domain
-              'home.arpa.'", draft-ietf-homenet-dot-14 (work in
-              progress), September 2017.
-
-   [14]       Cheshire, S. and T. Lemon, "Service Discovery Broker",
-              draft-sctl-discovery-broker-00 (work in progress), July
-              2017.
-
-   [15]       Cheshire, S. and T. Lemon, "Service Registration Protocol
-              for DNS-Based Service Discovery", draft-sctl-service-
-              registration-00 (work in progress), July 2017.
-
-   [16]       Cheshire, S. and T. Lemon, "Multicast DNS Discovery
-              Relay", draft-sctl-mdns-relay-00 (work in progress), July
-              2017.
-
-Authors' Addresses
 
 
-
-
-
-
-
-Lemon & Migault            Expires May 2, 2018                 [Page 12]
+Lemon, et al.              Expires May 3, 2018                 [Page 12]
 
 Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
 
 
+   [11]       Cheshire, S. and T. Lemon, "Multicast DNS Discovery
+              Relay", draft-sctl-dnssd-mdns-relay-01 (work in progress),
+              October 2017.
+
+   [12]       Cheshire, S. and T. Lemon, "Service Registration Protocol
+              for DNS-Based Service Discovery", draft-sctl-service-
+              registration-00 (work in progress), July 2017.
+
+   [13]       Korhonen, J., Krishnan, S., and S. Gundavelli, "Support
+              for multiple provisioning domains in IPv6 Neighbor
+              Discovery Protocol", draft-ietf-mif-mpvd-ndp-support-03
+              (work in progress), February 2016.
+
+   [14]       Popov, A., Nystrom, M., Balfanz, D., Langley, A., Harper,
+              N., and J. Hodges, "Token Binding over HTTP", draft-ietf-
+              tokbind-https-10 (work in progress), July 2017.
+
+   [15]       Pfister, P. and T. Lemon, "Special Use Domain
+              'home.arpa.'", draft-ietf-homenet-dot-14 (work in
+              progress), September 2017.
+
+   [16]       Cheshire, S. and T. Lemon, "Service Discovery Broker",
+              draft-sctl-discovery-broker-00 (work in progress), July
+              2017.
+
+Authors' Addresses
+
    Ted Lemon
-   Nominum, Inc.
-   800 Bridge Parkway
-   Redwood City, California  94065
+   Barefoot Consulting
+   Brattleboro, Vermont  05301
    United States of America
 
-   Phone: +1 650 381 6000
-   Email: ted.lemon@nominum.com
+   Email: mellon@fugue.com
 
 
    Daniel Migault
@@ -700,6 +725,19 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
 
 
 
+Lemon, et al.              Expires May 3, 2018                 [Page 13]
+
+Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
+
+
+   Stuart Cheshire
+   Apple Inc.
+   1 Infinite Loop
+   Cupertino, California  95014
+   USA
+
+   Phone: +1 408 974 3207
+   Email: cheshire@apple.com
 
 
 
@@ -725,4 +763,22 @@ Internet-Draft        Simple Homenet Naming/SD Arch         October 2017
 
 
 
-Lemon & Migault            Expires May 2, 2018                 [Page 13]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Lemon, et al.              Expires May 3, 2018                 [Page 14]

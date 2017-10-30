@@ -10,17 +10,16 @@
     <title abbrev="Simple Homenet Naming/SD Arch">Simple Homenet Naming and Service Discovery Architecture</title>
 
     <author initials="T" surname="Lemon" fullname="Ted Lemon">
-      <organization>Nominum, Inc.</organization>
+      <organization>Barefoot Consulting</organization>
       <address>
 	<postal>
-	  <street>800 Bridge Parkway</street>
-	  <city>Redwood City</city>
-	  <region>California</region>
+	  <street></street>
+	  <city>Brattleboro</city>
+	  <region>Vermont</region>
 	  <country>United States of America</country>
-	  <code>94065</code>
+	  <code>05301</code>
 	</postal>
-	<phone>+1 650 381 6000</phone>
-	<email>ted.lemon@nominum.com</email>
+	<email>mellon@fugue.com</email>
       </address>
     </author>
 
@@ -36,6 +35,21 @@
         <facsimile/>
         <email>daniel.migault@ericsson.com</email>
         <uri/>
+      </address>
+    </author>
+
+    <author initials='S.' surname='Cheshire' fullname='Stuart Cheshire'>
+      <organization>Apple Inc.</organization>
+      <address>
+	<postal>
+          <street>1 Infinite Loop</street>
+          <city>Cupertino</city>
+          <region>California</region>
+          <code>95014</code>
+          <country>USA</country>
+	</postal>
+	<phone>+1 408 974 3207</phone>
+	<email>cheshire@apple.com</email>
       </address>
     </author>
 
@@ -170,21 +184,29 @@
 <!-- update this to describe how the relay proxy is used for on-link relay -->
 	<t>Hosts on the homenet receive a set of resolver IP addresses using either DHCP or RA.  IPv4-only hosts will receive IPv4
 	  addresses of resolvers, if available, over DHCP.  IPv6-only hosts will receive resolver IPv6 addresses using either
-	  stateful (if available) or stateless DHCPv6, or through the domain name option in router advertisements.  All Homenet
-	  routers provide resolver information using both stateless DHCPv6 and RA; support for stateful DHCPv6 and DHCPv4 is
-	  optional, however if either service is offered, resolver addresses will be provided using that mechanism as well.
-	  Resolver IP addresses will always be IP addresses on the local link: every HNR is required to provide name resolution
-	  service.   This is necessary to allow DNS update using presence on-link as a mechanism for rejecting off-network
-	  attacks.
+	  stateful (if available) or stateless DHCPv6, or through the Recursive DNS Server Option (<xref target="RFC8106"/>, Section
+	  5.1) in router advertisements.
+	</t>
+	<t>All Homenet routers provide resolver information using both stateless DHCPv6 and RA; support for stateful DHCPv6 and
+	  DHCPv4 is optional, however if either service is offered, resolver addresses will be provided using that mechanism as
+	  well.
+	</t>
+      </section>
+
+      <section title="DNS Service Discovery Registration Protocol">
+	<t>The DNSSD Service Registration protocol <xref target="I-D.sctl-service-registration"/> requires that DNS updates be
+	  validated on the basis that they are received on the local link.  To ensure that such registrations are actually received
+	  on local links in the homenet, updates are sent to the local relay proxy (<xref target="I-D.sctl-dnssd-mdns-relay"/>) (XXX
+	  how?).
+	</t>
+	<t>The relay proxy encapsulates the update and sends it to whatever Discovery Proxy is listening on the link; the Discovery
+	  proxy then either consumes the update directly, or forwards it to the authoritative resolver for the local service
+	  discovery zone.  If the registration protocol is not supported on the homenet, the Discovery Proxy rejects the update with
+	  a ??? RCODE.
 	</t>
       </section>
 
       <section title="Configuring Service Discovery">
-	<!-- XXX we could do queries for lb._dnssd._udp.local using mDNS, but we prefer unicast because it's less of a resource hog -->
-	<!-- This is muddling service discovery bootstrap and service discovery of services.  Update this to talk about how service
-	     discovery service is discovered, as opposed to how it is done once bootstrap has completed. -->
-	<!-- note: service discovery bootstrap using '.local' would work, but requires multicast, which we would like to avoid. -->
-	
 	<t>Clients discovering services using <xref target="RFC6763">DNS-SD</xref> follow a two-step process.
 	  The first step is for the client device to determine in which domain(s) to attempt to discover services.
 	  The second step is for the client device to then seek desired service(s) in those domain(s).
@@ -242,22 +264,21 @@
 	  ULA(s).  Whenever the "&lt;domain&gt;" sequence appears in this section, it references each of the domains mentioned in
 	  this paragraph.</t>
 
-	<t>Homenets advertise the availability of several browsing zones in the "b._dns_sd._udp.&lt;domain&gt;" subdomain.  By default,
-	  the 'home.arpa' domain is advertised.  Similarly, 'home.arpa' is advertised as the default browsing and service registration domain
-	  under "db._dns_sd._udp.&lt;domain&gt;", "r._dns_sd._udp.&lt;domain&gt;", "dr._dns_sd._udp.&lt;domain&gt;" and
-	  "lb._dns_sd._udp.&lt;domain&gt;".</t>
+	<t>Homenets advertise the availability of several browsing zones in the "b._dns_sd._udp.&lt;domain&gt;" subdomain.  By
+	  default, the 'home.arpa' domain is advertised.  Similarly, 'home.arpa' is advertised as the default browsing and service
+	  registration domain under "db._dns_sd._udp.&lt;domain&gt;", "r._dns_sd._udp.&lt;domain&gt;",
+	  "dr._dns_sd._udp.&lt;domain&gt;" and "lb._dns_sd._udp.&lt;domain&gt;".</t>
 
-	<!-- homenet just needs to answer queries on lb._dns_sd._udp.<domain>, and in order for that to work, there has to be an
-	     authoritative server. -->
-	<t>In order for this discovery process to work, the homenet must provide authoritative name service for the 'ip6.arpa' and
-	  'in-addr.arpa' subdomains corresponding to each of the prefixes advertised on the homenet.   For example, consider a homenet
-	  with the 192.168.1.0/24, 2001:db8:1234:5600::/56 and fc01:2345:6789:1000::/56 prefixes.   This homenet will have to provide
-	  a name server that claims to be authoritative for 1.168.192.in-addr.arpa, 6.5.4.3.2.1.8.b.d.0.1.0.0.2.ip6.arpa and
+	<t>In order for this discovery process to work, the homenet must provide authoritative answers for each of the domains that
+	  might be queried.  To do this, it provides authoritative name service for the 'ip6.arpa' and 'in-addr.arpa' subdomains
+	  corresponding to each of the prefixes advertised on the homenet.  For example, consider a homenet with the 192.168.1.0/24,
+	  2001:db8:1234:5600::/56 and fc01:2345:6789:1000::/56 prefixes.  This homenet will have to provide a name server that
+	  claims to be authoritative for 1.168.192.in-addr.arpa, 6.5.4.3.2.1.8.b.d.0.1.0.0.2.ip6.arpa and
 	  0.0.9.8.7.6.5.4.3.2.1.0.c.f.ip6.arpa.
 	</t>
-	<t>An IPv6-only homenet would not have an authoritative server for a subdomain of in-addr.arpa.  These public authoritative zones are
-	  required for the public prefixes even if the prefixes are not delegated.  However, they need not be accessible outside of
-	  the homenet.</t>
+	<t>An IPv6-only homenet would not have an authoritative server for a subdomain of in-addr.arpa.  These public authoritative
+	  zones are required for the public prefixes even if the prefixes are not delegated.  However, they need not be accessible
+	  outside of the homenet.</t>
 	<t>It is out of the scope of this document to specify ISP behavior, but we note that ISPs have the option of securely
 	  delegating the zone, or providing an unsigned delegation, or providing no delegation.  Any delegation tree that does not
 	  include an unsigned delegation at or above the zone cut for the ip6.arpa reverse zone for the assigned prefix will fail to
@@ -269,10 +290,10 @@
       </section>
 	
       <section title="Resolution of local names">
-	<t>Local names appear as subdomains of 'home.arpa'.  These names can only be resolved within the homenet; not only is
-	  'home.arpa' not a globally unique name, but queries from outside of the homenet for any name, on or off the homenet, must
-	  be rejected with a REFUSED response.  The intended use case for local names is that hosts will attempt to discover or
-	  contact other hosts on the homenet that are offering services.</t>
+	<t>By default, Local names appear as subdomains of 'home.arpa'.  These names can only be resolved within the homenet; not
+	  only is 'home.arpa' not a globally unique name, but queries from outside of the homenet for any name, on or off the
+	  homenet, must be rejected with a REFUSED response.  The intended use case for local names is that hosts will attempt to
+	  discover or contact other hosts on the homenet that are offering services.</t>
 
 	<t>In addition, names of devices on the homenet can appear in the resource records of names that are subdomains of the
 	  locally-served 'in-addr.arpa' or 'ip6.arpa zone that corresponding to the RFC1918 IPv4 prefix and the IPv6 ULA that is in
@@ -303,18 +324,29 @@
 	  in the event that the same name is claimed by a service on two links.   Services that are expected to be accessed by users
 	  who type in names should use <xref target="I-D.sctl-service-registration"/> if it is available.</t>
 
-	<t>Homenets are not required to support Service Registration.   Service registration requires a stateful authoritative DNS server; this
-	  may be beyond the capability of the minimal Homenet router.   However, more capable Homenet routers should provide this
-	  capability.   In order to make this work, minimal Homenet routers MUST implement the split hybrid proxy
-	  <xref target="I-D.sctl-mdns-relay"/>.   This enables a Homenet with one or more Homenet routers that provide a stateful
-	  registration cache to allow those routers to take over service, using Discovery Relays to service links that are
-	  connected using Homenet routers with more limited functionality.
+	<t>Homenets are not required to support Service Registration.  Service registration requires a stateful authoritative DNS
+	  server; this may be beyond the capability of the minimal Homenet router.  However, more capable Homenet routers should
+	  provide this capability.  In order to make this work, minimal Homenet routers MUST implement the split hybrid proxy
+	  <xref target="I-D.sctl-dnssd-mdns-relay"/>.  This enables a Homenet with one or more Homenet routers that provide a stateful
+	  registration cache to allow those routers to take over service, using Discovery Relays to service links that are connected
+	  using Homenet routers with more limited functionality.
 	</t>
       </section>
 
+      <section title="Globally Unique Name">
+	<t>Automatic configuration of a globally unique name for the homenet is out of scope for this document.   However,
+	  homenet servers MUST allow the user to configure a globally unique name in place of the default name, 'home.arpa.'
+	  By default, even if configured with a global name, homenet routers MUST NOT answer queries from outside of the
+	  homenet for subdomains of that name.
+	</t>
+      </section>
+      
       <section title="DNSSEC Validation">
 	<t>DNSSEC Validation for the 'home.arpa' zone and for the locally-served 'ip6.arpa and 'in-adr.arpa' domains is not possible
 	  without a trust anchor.  Establishment of a trust anchor for such validation is out of scope for this document.</t>
+	<t>Homenets that have been configured with a globally unique domain MUST support DNSSEC signing of local names, and must
+	  provide a way to generate a KSK that can be used in the secure delegation of the globally unique domain assigned to the
+	  homenet.</t>
       </section>
 
       <section title="Support for Multiple Provisioning Domains">
@@ -332,7 +364,7 @@
 	  answer.</t>
 
 	<t>Each ISP has its own provisioning domain.  Because ISPs connections cannot be assumed to be persistent, the homenet has
-	its own separate provisioning domain.</t>
+	  its own separate provisioning domain.</t>
 
 	<t>Configuration from the IPv4 DHCP server are treated as being part of the homenet provisioning domain.  The case where a
 	  homenet advertises IPv4 addresses from one or more public prefixes is out of scope for this document.  Such a
@@ -350,7 +382,7 @@
     <section title="Management Considerations" anchor="mgt">
       <t>
 	This architecture is intended to be self-healing, and should not require management.   That said, a great deal of debugging
-	and management can be done simply using the DNS service discovery protocol.
+	and management can be done simply using the DNS Service Discovery protocol.
       </t>
     </section>
 
@@ -392,39 +424,12 @@
       <?rfc include="reference.RFC.7556" ?>
       <?rfc include="reference.RFC.8106" ?>
       <?rfc include="reference.I-D.ietf-dnssd-hybrid" ?>
+      <?rfc include="reference.I-D.sctl-dnssd-mdns-relay" ?>
+      <?rfc include="reference.I-D.sctl-service-registration" ?>
       <?rfc include="reference.I-D.ietf-mif-mpvd-ndp-support" ?>
       <?rfc include="reference.I-D.ietf-tokbind-https" ?>
       <?rfc include="reference.I-D.ietf-homenet-dot" ?>
-      <reference anchor="I-D.sctl-discovery-broker">
-	<front>
-	  <title>Service Discovery Broker</title>
-	  <author initials="S" surname="Cheshire" fullname="Stuart Cheshire"/>
-	  <author initials="T" surname="Lemon" fullname="Ted Lemon"/>
-	  <date year='2017' month='July' day='2'/>
-	</front>
-	<seriesInfo name="Internet-Draft" value="draft-sctl-discovery-broker-00"/>
-	<format type="TXT" target="http://www.ietf.org/internet-drafts/draft-sctl-discovery-broker-00.txt"/>
-      </reference>
-      <reference anchor="I-D.sctl-service-registration">
-	<front>
-	  <title>Service Registration Protocol for DNS-Based Service Discovery</title>
-	  <author initials="S" surname="Cheshire" fullname="Stuart Cheshire"/>
-	  <author initials="T" surname="Lemon" fullname="Ted Lemon"/>
-	  <date year='2017' month='July' day='2'/>
-	</front>
-	<seriesInfo name="Internet-Draft" value="draft-sctl-service-registration-00"/>
-	<format type="TXT" target="http://www.ietf.org/internet-drafts/draft-sctl-service-registration-00.txt"/>
-      </reference>
-      <reference anchor="I-D.sctl-mdns-relay">
-	<front>
-	  <title>Multicast DNS Discovery Relay</title>
-	  <author initials="S" surname="Cheshire" fullname="Stuart Cheshire"/>
-	  <author initials="T" surname="Lemon" fullname="Ted Lemon"/>
-	  <date year='2017' month='July' day='2'/>
-	</front>
-	<seriesInfo name="Internet-Draft" value="draft-sctl-mdns-relay-00"/>
-	<format type="TXT" target="http://www.ietf.org/internet-drafts/draft-sctl-mdns-relay-00.txt"/>
-      </reference>
+      <?rfc include="reference.I-D.sctl-discovery-broker"?>
     </references>
   </back>
 </rfc>
