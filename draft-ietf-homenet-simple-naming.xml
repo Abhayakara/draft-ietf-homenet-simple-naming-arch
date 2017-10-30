@@ -207,18 +207,20 @@
 	  "lb._dns_sd._udp" is prepended onto three different kinds of "bootstrap domain" to form
 	  DNS queries that allow the device to learn the configuration information.</t>
 
-	<t>One of these bootstrap domains is "local".
+	<t>One of these bootstrap domains is the fixed string "local".
 	  The device issues the query "lb._dns_sd._udp.local. PTR ?" (resolved using Multicast DNS),
 	  and if any answers are received, then they are added to the set of domains in which the
 	  client devices attempt to discover services.</t>
 
-	<t>Another of these bootstrap domains is derived from DHCP.
-	  If the domain given in the "domain" parameter of a DHCP address allocation message is "example.com", then
+	<t>Another kind of these bootstrap domains is name-based, derived from
+	  the <xref target="RFC2132">DHCPv4 "domain name" option (code 15)</xref> (for IPv4) or
+	  the <xref target="RFC8106">DNS Search List (DNSSL) Router Advertisement option</xref> (for IPv6).
+	  If a domain in the DNSSL is "example.com", then
 	  the device issues the query "lb._dns_sd._udp.example.com. PTR ?" (resolved using Unicast DNS),
 	  and if any answers are received, then they are likewise added to the set of domains in which the
 	  client devices attempt to discover services.</t>
 
-	<t>Finally, bootstrap domains are derived from the devices IP addresses themselves.
+	<t>Finally, the third kind of bootstrap domain is address-based, derived from the device's IP address(es) themselves.
 	  If the device has IP address 192.168.1.100/24, then
 	  the device issues the query "lb._dns_sd._udp.0.1.168.192.in-addr.arpa. PTR ?" (resolved using Unicast DNS),
 	  and if any answers are received, then they are also added to the set of domains in which the
@@ -226,8 +228,14 @@
 
 	<t>Since there is an HNR on every link of a homenet, automatic configuration could be performed
 	  by having HNRs answer the "lb._dns_sd._udp.local. PTR ?" (Multicast DNS) queries.
-	  However, multicast is slow and unreliable on many modern network technologies like Wi-Fi,
-	  so we prefer to avoid using it. Instead we require that a homenet answer the address-based queries.</t>
+	  However, because multicast is slow and unreliable on many modern network technologies like Wi-Fi,
+	  we prefer to avoid using it.
+	  Instead we require that a homenet be configured to answer the name-based bootstrap queries.
+	  By default the domain in the DNSSL communicated to the client devices will be "home.arpa",
+	  and the homenet will be configured to correctly answer queries such as
+	  "lb._dns_sd._udp.example.com. PTR ?", though client devices must not assume that the name will
+	  always be "home.arpa". A client could be configured with any valid DNSSL, and should construct
+	  the appropriate bootstrap queries derived from the name(s) in their configured DNS Search List.</t>
 
 	<t>HNRs will answer domain enumeration queries against every IPv4 address prefix advertised on a
 	  homenet link, and every IPv6 address prefix advertised on a homenet link, including prefixes derived from the homenet's
@@ -376,11 +384,13 @@
     <references title="Normative References">
       <?rfc include="reference.RFC.1034" ?>
       <?rfc include="reference.RFC.1035" ?>
+      <?rfc include="reference.RFC.2132" ?>
       <?rfc include="reference.RFC.2136" ?>
       <?rfc include="reference.RFC.6762" ?>
       <?rfc include="reference.RFC.6763" ?>
       <?rfc include="reference.RFC.7368" ?>
       <?rfc include="reference.RFC.7556" ?>
+      <?rfc include="reference.RFC.8106" ?>
       <?rfc include="reference.I-D.ietf-dnssd-hybrid" ?>
       <?rfc include="reference.I-D.ietf-mif-mpvd-ndp-support" ?>
       <?rfc include="reference.I-D.ietf-tokbind-https" ?>
