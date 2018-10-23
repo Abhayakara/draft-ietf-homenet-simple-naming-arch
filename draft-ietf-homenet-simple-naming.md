@@ -704,170 +704,37 @@ This is not considered to be a problem, since it is understood by the authors th
 majority of hosts that are capable of doing mDNS discovery are also capable of doing DNS-SD
 discovery as described in {{RFC6763}}.
 
-# Implementation
-
-## Required Functions
-
-Each HNR implements a minimum set of necessary functions.  Some HNRs may also implement optional
-functionality.  The following functions are REQUIRED to be present in any HNR:
-
-### Discovery Proxy
-
-Each link on the home network must have at least one Discovery Proxy.  This means that every HNR
-must implement the Discovery Proxy function.
-
-### Homenet DNS Proxy
-
-Each HNR must be able to resolve DNS queries from hosts.  Therefore, every HNR must implement
-the Homenet DNS Proxy function.
-
-### DHCPv4 Server
-
-(Figure out what hosts actually do right now, and see if there is a consistent behavior that we
-can specify that will work.)
-
-For IPv4, the DHCP server may be required for addressing, but this is out of scope for this
-document.  The function that is required of the DHCPv4 server by this document is that it
-advertise the homenet name using the Domain Name ({{RFC2132}} section 3.17) and Domain Search
-List ({{RFC3397}}).  The DHCP server must also advertise at least one Domain Name Server
-({{RFC2132 section 3.8) option that points to an IPv4 address of the HNR, on which DNS queries
-for any domain name will be answered on port 53.
-
-### DHCPv6 Server
-For IPv6, DHCPv6 is not required.   If a DHCPv6 server is present, it MUST NOT specify any name other than "home.arpa" in the [etc] [or say MUST NOT conflict with RA]
-
-is required to provide a DNS Recursive Name Server option {{RFC3646}} that lists an IPv6 address of an HNR that is able to answer queries for any domain name on port 53.   The DHCP server is also required to provide a Domain Name Search List option {{RFC3646}} that lists exactly one domain name, "home.arpa."
-
-### Router Advertisements
-
-Router Advertisements MUST contain ...
-
-### DNS Proxy
-Each HNR has a DNS Proxy which can differentiate between queries that are for domains on the homenet, queries for locally-served zones {{RFC6303}} not provided by the homenet, and queries that are for other names.
-
-This proxy must have a list of link-specific subdomains and be able to forward queries for those subdomains to the Discovery Proxy that is answering for that link, or it must forward all queries for home.arpa and for locally served domains to a Discovery Broker that is present on the homenet.   Both capabilities are required.   Queries for names that are neither locally-served nor subdomains of home.arpa must be forwarded to an appropriate upstream DNS resolver provided by one of the ISPs to which the homenet is connected. What about MPvD?
-
-## Optional Functions
-
-### Discovery Broker
-
-only one activated on the whole homenet. The home network has a single Discovery Broker. The Discovery Broker is believed to coordinates the resolution inside the home network.  First, the Discovery Broker is aware of the different Discovery Proxies and associated Proxy Zones.  In addition, the Broker is also aware of the Advertising Proxy that contains all resources registered by hosts or services.
-
-[Daniel is talking about the DNSSD Registration Server here.]
-[Talk about required behavior for Registration Server if present, since if present and done wrong it could break things.]
-Advertising Proxy (at least one for the whole network). The home network has a single Advertising Proxy specific homenet-aware devices or services register to.
-
-# HNR Behaviors
-
-## A new host is joining the network
-
-1. It is being provisioned with an IP address, and DNS Proxy via DHCPv6 option DNS Recursive Name Server option or the Neighbor Discovery Extension Recursive DNS Server Option. The DNS Proxy is always on the link so DNS Updates to the destination of the Advertising Proxies can be controlled.
-2. If the host or service is not homenet-aware, it MAY perform service discovery using mDNS on the link it is hosted, and sends DNS queries to the DNS Proxy. Only the latest is considered in this document.
-3. If the host/service is homenet aware, it performs service discovery using unicast DNS.  These DNS queries as well as those associated to the Global DNS are sent to the DNS Proxy.  The DNS Proxy is responsible to proceed to the appropriate resolution. The distinction between the different resolution is based on the "home.arpa" suffix.
-
-## A new link is created
-
-1. The HNR involved needs to extend the Discovery mechanism to that link.  Either the HNR implements a Discovery Proxy or a Discovery Relay.  The HNR MAY act as a Discovery Proxy, in which case it needs to discover the Discovery Broker and provides the necessary information so the Discovery Broker adds the new link domain - typically "linkxxx.home.arpa".  The name of the link is automatically configured from the IP prefix of the new link.  If there is no Discovery Broker, the HNR MUST be ready to play as a Discovery Broker in addition to the Discovery Proxy.  If the HNR is informed of the existence of a Discovery Discovery, the HNR may prefer to act as a Discovery Relay and attempt to associate with the Discovery Proxy.  In case the association fails, the HNR MUST fall back to instantiate a Discovery Proxy.
-2. The HNR also needs to extends the Advertising Proxy to its link and is expected to instantiate a Advertising Proxy.
-3. The HNR MUST also be able to provides the necessary information so the hosts and nodes attached to the link can perform the resolution via the DNS Proxy.
-When the no DNS Proxy is found inside the homenet work, that is instantiated with a non local scope IP address, the HNR MUST instantiate a DNS Proxy.
-
-## A host performs a DNS resolution or a service discovery lookup
-
-1. A hosts that is not homenet-aware sends mDNS queries on its LAN and DNS queries on the DNS Proxy.
-2. A host that is homenet aware sends all DNS unicast queries to the DNS Proxy.
-3. The requests that are not intended for the Global DNS are identified by the "home.arpa" suffix.  These requests are sent to the Discovery Broker.  The Discovery Broker performs two resolutions one against the Advertising Proxies and one against the Discovery Proxies.  Results are aggregated back to the DNS Proxy.
-4. Global DNS resolutions are forwarded to the resolver by the DNS Proxy.  The DNS Proxy may use different rules to select the appropriated resolver.  When the DNS requested is performed with a non local IP address, the DNS Proxy may use that IP address to identify the appropriated resolver.  When the IP address is of local scope, the DNS Proxy may partition the naming space between the resolvers.
-
 # Management Considerations {#mgt}
 
-This architecture is intended to be self-healing, and should not
-require management.  That said, a great deal of debugging and
-management can be done simply using the DNS Service Discovery
+This architecture is intended to be self-healing, and should not require management.  That said,
+a great deal of debugging and management can be done simply using the DNS Service Discovery
 protocol.
-
 
 # Privacy Considerations
 
-Privacy is somewhat protected in the sense that names published on the
-homenet are only visible to devices connected to the homenet.  This
-may be insufficient privacy in some cases.
+Privacy is somewhat protected in the sense that names published on the homenet are only visible
+to devices connected to the homenet.  This may be insufficient privacy in some cases.
 
-The privacy of host information on the homenet is left to hosts.
-Various mechanisms are available to hosts to ensure that tracking does
-not occur if it is not desired.  However, devices that need to have
-special permission to manage the homenet will inevitably reveal
-something about themselves when doing so.  It may be possible to use
-something like HTTP token binding {{I-D.ietf-tokbind-https}} to
-mitigate this risk.
-
+The privacy of host information on the homenet is left to hosts.  Various mechanisms are
+available to hosts to ensure that tracking does not occur if it is not desired.  However,
+devices that need to have special permission to manage the homenet will inevitably reveal
+something about themselves when doing so.
 
 # Security Considerations
 
-There are some clear issues with the security model described in this
-document, which will be documented in a future version of this
-section.  A full analysis of the avenues of attack for the security
-model presented here have not yet been done, and must be done before
-the document is published.
-
-## DNSSEC
-
-Add text ehre talking about how the DNSSEC stuff is completely useless without border security.
-
+There are some clear issues with the security model described in this document, which will be
+documented in a future version of this section.  A full analysis of the avenues of attack for
+the security model presented here have not yet been done, and must be done before the document
+is published.
 
 # IANA considerations {#IANA}
 
-No new actions are required by IANA for this document.
+IANA is requested to add the following names to the Service Name and Transport Protocol Number registry:
+
+|Service Name|Port Number|Transport Protocol|Description|Assignee|Contact|Reference|Service Code|Unauthorized|
+|------------|-----------|------------------|-----------|--------|-------|---------|------------|------------|
+|homenet-rrp||tcp |Homenet Reverse Registration Protocol|||This Document|||
+|homenet-rrp||tcp |Homenet Reverse Registration Protocol|||This Document|||
+|homenet-derp||tcp|Homenet Delegation Registration Protcol|||This Document|||
 
 --- back
-
-# Existing solutions
-
-Previous attempts to automate naming and service discovery in the
-context of a home network are able to function with varying degrees of
-success depending on the topology of the home network.  Unfortunately,
-these solutions do not fully address the requirements of homenets.
-
-For example, Multicast DNS {{RFC6762}} can provide naming and service
-discovery {{RFC6763}}, but only within a single multicast domain.
-
-The Domain Name System provides a hierarchical namespace {{RFC1034}},
-a mechanism for querying name servers to resolve names {{RFC1035}}, a
-mechanism for updating namespaces by adding and removing names
-{{RFC2136}}, and a mechanism for discovering services {{RFC6763}}.
-Unfortunately, DNS provides no mechanism for automatically
-provisioning new namespaces, and secure updates to namespaces require
-that the host submitting the update have a public or symmetric key
-that is known to the network and authorized for updates.  In an
-unmanaged network, the publication of and authorization of these keys
-is an unsolved problem.
-
-Some managed networks get around this problem by having the DHCP
-server do DNS updates.  However, this doesn't really work, because
-DHCP doesn't provide a mechanism for updating service discovery
-records: it only supports publishing A and AAAA records.
-
-This partially solves the trust problem: DHCP can validate that a
-device is at least connected to a network link that is actually part
-of the managed network.  This prevents an off-network attacker from
-registering a name, but provides no mechanism for actually validating
-the identity of the host registering the name.  For example, it would
-be easy for an attacker on the network to steal a registered name.
-
-Hybrid Multicast DNS {{I-D.ietf-dnssd-hybrid}} proposes a mechanism
-for extending multicast DNS beyond a single multicast domain.
-However, in order to use this as a solution, some shortcomings need to
-be considered.  Most obviously, it requires that every multicast
-domain have a separate name.  This then requires that the homenet
-generate names for every multicast domain.  These names would then be
-revealed to the end user.  But since they would be generated
-automatically and arbitrarily, they would likely cause confusion
-rather than clarity, and in degenerate cases requires that the end
-user have a mental model of the topology of the network in order to
-guess on which link a given service may appear.
-
-At present, the approach we intend to take with respect to
-disambiguation is that this will not be solved at a protocol level for
-devices that do not implement the registration protocol.
-
-

@@ -2,10 +2,10 @@
 <!DOCTYPE rfc SYSTEM "rfc2629.dtd">
 <?rfc toc="yes"?>
 <?rfc compact="yes" ?>
-<?rfc symrefs="no"?>
+<?rfc symrefs="yes"?>
 
 <rfc obsoletes="" updates="" category="info" ipr="trust200902"
-     docName="draft-ietf-homenet-simple-naming-01">
+     docName="draft-ietf-homenet-simple-naming-02">
   <front>
     <title abbrev="Simple Homenet Naming/SD Arch">Simple Homenet Naming and Service Discovery Architecture</title>
 
@@ -53,7 +53,7 @@
       </address>
     </author>
 
-    <date year="2018" month="March"></date>
+    <date year="2018" month="July" day="2"></date>
     <abstract>
       <t>
 	This document describes how names are published and resolved on homenets, and how hosts are configured
@@ -94,9 +94,9 @@
 	Name service on a local area network (LAN) requires the following:
 	<list style="symbols">
 	  <t>Name: a forward domain under which information about local services will be published</t>
-	  <t>Authority: a name server that is authoritative for at least a forward and one or two reverse
-	  domains that are applicable to that network</t>
-	  <t>Resolution: a full-service caching DNS resolver</t>
+	  <t>Authority: a name server that is authoritative for at least one forward domain and one or two reverse
+	  domains that are applicable to that network and is capable of signing and publishing the zones using DNSSEC</t>
+	  <t>Resolution: a full-service caching DNS resolver that fully supports EDNS(0) and queries with the DO bit set</t>
 	  <t>Publication: a mechanism that
 	    <list style="symbols">
 	      <t>allows services on the LAN to publish information about the services they provide</t>
@@ -118,6 +118,13 @@
       </t>
 
       <section title="Managed LAN versus Homenet">
+	<t>
+	  A managed network is one that has a (human) manager, or operator.
+	  The operator has authority over the network, and the authority to publish names
+	  in a forward DNS tree, and reverse names in the reverse tree.
+	  The operator has the authority to sign the respective trees with DNSSEC,
+	  and acquire TLS certificates for hosts/servers within the network.
+	</t>
 	<t>
 	  On a managed LAN, many of these services can be provided by operators. When a new printer is added to
 	  the network, it can be added to the service discovery system (the authoritative server) manually. When
@@ -178,6 +185,9 @@
 	  <t hangText="SHNR">Homenet Router implementing simple homenet naming architecture</t>
 	  <t hangText="AHNR">Homenet Router implementing advanced homenet naming architecture</t>
 	  <t hangText="ISP">Internet Service Provider</t>
+	  <t hangText="Forward Mapping">A mapping between a host name or service name and some information
+	    about that host or service.</t>
+	  <t hangText="Reverse Mapping">A mapping between an IP address and the host that has that IP address.</t>
       </list></t>
     </section>
     
